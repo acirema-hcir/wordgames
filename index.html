@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Word Games</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.5s;
+            background-image: url('https://www.transparenttextures.com/patterns/honeycomb.png');
+            background-blend-mode: overlay;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 450px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        input {
+            padding: 8px;
+            margin: 10px;
+            width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        h1 {
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 10px;
+        }
+
+        .difficulty-btn {
+            background-color: #2196F3;
+        }
+
+        .difficulty-btn:hover {
+            background-color: #1976D2;
+        }
+
+        #leaderboard {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        #feedback {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .logo {
+            font-size: 40px;
+            color: #ff9800;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+        }
+
+        .guess-logo {
+            font-size: 40px;
+            color: #2196F3;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+        }
+
+        #wordInfo {
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        .main-bg { background: linear-gradient(135deg, #2196F3, #64B5F6); }
+        .spelling-bee-bg { background: linear-gradient(135deg, #ffeb3b, #ff9800, #f44336); }
+        /* Updated Guess the Word home screen to grayish */
+        .guess-the-word-bg { background: linear-gradient(135deg, #757575, #B0BEC5); }
+        .easy-bg { background: linear-gradient(135deg, #4CAF50, #81C784); }
+        .medium-bg { background: linear-gradient(135deg, #FFEB3B, #FFD54F); }
+        .hard-bg { background: linear-gradient(135deg, #F44336, #E57373); }
+        .impossible-bg { background: linear-gradient(135deg, #FF5722, #FF8A65); }
+        .infinity-bg { background: linear-gradient(135deg, #9C27B0, #CE93D8); }
+    </style>
+</head>
+<body class="main-bg">
+    <div class="container" id="gameContainer">
+        <div id="mainMenu">
+            <h1>Word Games</h1>
+            <button class="difficulty-btn" onclick="showSpellingBee()">Spelling Bee</button>
+            <button class="difficulty-btn" onclick="showGuessTheWord()">Guess the Word</button>
+        </div>
+
+        <div id="spellingBeeMenu" style="display: none;">
+            <div class="logo">🐝 Spelling Bee</div>
+            <h1>Spelling Bee</h1>
+            <p>Choose your difficulty:</p>
+            <button class="difficulty-btn" onclick="startGame('easy', 'spellingBee')">Easy</button>
+            <button class="difficulty-btn" onclick="startGame('medium', 'spellingBee')">Medium</button>
+            <button class="difficulty-btn" onclick="startGame('hard', 'spellingBee')">Hard</button>
+            <button class="difficulty-btn" onclick="startGame('impossible', 'spellingBee')">Impossible</button>
+            <button class="difficulty-btn" onclick="startGame('infinity', 'spellingBee')">Infinity</button>
+            <div id="leaderboard">
+                <h3>Infinity Leaderboard</h3>
+                <ol id="spellingBeeLeaderboardList"></ol>
+            </div>
+            <button onclick="backToMainMenu()">Back</button>
+        </div>
+
+        <div id="guessTheWordMenu" style="display: none;">
+            <div class="guess-logo">❓ Guess the Word</div>
+            <h1>Guess the Word</h1>
+            <p>Choose your difficulty:</p>
+            <button class="difficulty-btn" onclick="startGame('easy', 'guessTheWord')">Easy</button>
+            <button class="difficulty-btn" onclick="startGame('medium', 'guessTheWord')">Medium</button>
+            <button class="difficulty-btn" onclick="startGame('hard', 'guessTheWord')">Hard</button>
+            <button class="difficulty-btn" onclick="startGame('impossible', 'guessTheWord')">Impossible</button>
+            <button class="difficulty-btn" onclick="startGame('infinity', 'guessTheWord')">Infinity</button>
+            <div id="leaderboard">
+                <h3>Infinity Leaderboard</h3>
+                <ol id="guessTheWordLeaderboardList"></ol>
+            </div>
+            <button onclick="backToMainMenu()">Back</button>
+        </div>
+
+        <div id="gameScreen" style="display: none;">
+            <p>Word <span id="wordNumber">1</span> of <span id="totalWords">3</span></p>
+            <div id="wordInfo"></div>
+            <button id="hearWordBtn" onclick="playWord()">Hear Word</button>
+            <input type="text" id="userInput" placeholder="Type your spelling" spellcheck="false">
+            <button onclick="checkSpelling()">Submit</button>
+            <p id="feedback"></p>
+        </div>
+    </div>
+
+    <script>
+        const wordsByLetter = {
+            'a': [
+                {word: 'ant', desc: 'A small insect that lives in colonies'},
+                {word: 'apple', desc: 'A common red or green fruit'},
+                {word: 'arrow', desc: 'A projectile shot from a bow'},
+                {word: 'absent', desc: 'Not present or missing'},
+                {word: 'algebra', desc: 'A branch of mathematics with letters and symbols'},
+                {word: 'ambition', desc: 'A strong desire to achieve something'},
+                {word: 'accident', desc: 'An unexpected event causing harm'},
+                {word: 'abundance', desc: 'A large quantity of something'},
+                {word: 'acoustics', desc: 'The science of sound'},
+                {word: 'acquiesce', desc: 'To agree reluctantly but without protest'},
+                {word: 'aberration', desc: 'A deviation from the norm'},
+                {word: 'abhorrent', desc: 'Inspiring disgust or hatred'},
+                {word: 'acclamation', desc: 'Loud and enthusiastic approval'},
+                {word: 'acrimonious', desc: 'Bitter or angry in tone'},
+                {word: 'ameliorate', desc: 'To make something better'},
+                {word: 'anachronism', desc: 'Something out of its proper time period'},
+                {word: 'antediluvian', desc: 'Extremely old or outdated'},
+                {word: 'apocryphal', desc: 'Of doubtful authenticity'},
+                {word: 'approbation', desc: 'Official approval or praise'},
+                {word: 'assiduous', desc: 'Showing great care and perseverance'}
+            ],
+            'b': [
+                {word: 'bat', desc: 'A flying mammal active at night'},
+                {word: 'ball', desc: 'A round object used in games'},
+                {word: 'bear', desc: 'A large furry mammal'},
+                {word: 'baker', desc: 'A person who makes bread'},
+                {word: 'balloon', desc: 'An inflatable object filled with gas'},
+                {word: 'battery', desc: 'A device that stores energy'},
+                {word: 'benefit', desc: 'An advantage or profit'},
+                {word: 'behavior', desc: 'The way someone acts'},
+                {word: 'belligerent', desc: 'Hostile or aggressive'},
+                {word: 'benevolent', desc: 'Kind and generous'},
+                {word: 'bewilderment', desc: 'A state of confusion'},
+                {word: 'blasphemous', desc: 'Irreverent toward something sacred'},
+                {word: 'bombastic', desc: 'Pompous or overblown in language'},
+                {word: 'bucolic', desc: 'Relating to rural life'},
+                {word: 'bureaucratic', desc: 'Overly concerned with rules'},
+                {word: 'bellicose', desc: 'Eager to fight'},
+                {word: 'benevolence', desc: 'The quality of being kind'},
+                {word: 'bereavement', desc: 'The state of having lost a loved one'},
+                {word: 'bourgeoisie', desc: 'The middle class in society'},
+                {word: 'byzantine', desc: 'Excessively complicated'}
+            ],
+            'c': [
+                {word: 'cat', desc: 'A small domesticated feline'},
+                {word: 'cake', desc: 'A sweet baked dessert'},
+                {word: 'corn', desc: 'A yellow grain crop'},
+                {word: 'candy', desc: 'A sweet treat made of sugar'},
+                {word: 'camera', desc: 'A device for taking photographs'},
+                {word: 'capture', desc: 'To take something by force'},
+                {word: 'caution', desc: 'Care taken to avoid danger'},
+                {word: 'ceremony', desc: 'A formal event or ritual'},
+                {word: 'chameleon', desc: 'A lizard that changes color'},
+                {word: 'connoisseur', desc: 'An expert in fine arts or tastes'},
+                {word: 'cacophony', desc: 'A harsh mixture of sounds'},
+                {word: 'capricious', desc: 'Impulsive or unpredictable'},
+                {word: 'cartographer', desc: 'A person who makes maps'},
+                {word: 'cathartic', desc: 'Providing emotional release'},
+                {word: 'circumvent', desc: 'To avoid or bypass'},
+                {word: 'clandestine', desc: 'Kept secret or hidden'},
+                {word: 'cognizant', desc: 'Aware or conscious of something'},
+                {word: 'commensurate', desc: 'Equal in measure or extent'},
+                {word: 'conflagration', desc: 'A large destructive fire'},
+                {word: 'contumacious', desc: 'Stubbornly disobedient'}
+            ],
+            'd': [
+                {word: 'dog', desc: 'A loyal domesticated animal'},
+                {word: 'duck', desc: 'A waterfowl with a flat beak'},
+                {word: 'deer', desc: 'A forest animal with antlers'},
+                {word: 'dance', desc: 'A rhythmic movement to music'},
+                {word: 'danger', desc: 'A risk of harm'},
+                {word: 'delight', desc: 'Great pleasure or joy'},
+                {word: 'deposit', desc: 'To place something for safekeeping'},
+                {word: 'disaster', desc: 'A sudden event causing damage'},
+                {word: 'deduction', desc: 'A conclusion from reasoning'},
+                {word: 'deleterious', desc: 'Harmful or damaging'},
+                {word: 'debilitate', desc: 'To weaken or exhaust'},
+                {word: 'decadence', desc: 'Moral or cultural decline'},
+                {word: 'deferential', desc: 'Showing respect or submission'},
+                {word: 'demagogue', desc: 'A leader who seeks support by appealing to emotions'},
+                {word: 'denigrate', desc: 'To criticize unfairly'},
+                {word: 'deprecatory', desc: 'Expressing disapproval'},
+                {word: 'derogatory', desc: 'Showing a critical attitude'},
+                {word: 'desultory', desc: 'Lacking a plan or purpose'},
+                {word: 'diaphanous', desc: 'Light, delicate, and translucent'},
+                {word: 'disingenuous', desc: 'Not candid or sincere'}
+            ],
+            'e': [
+                {word: 'egg', desc: 'A bird’s oval reproductive body'},
+                {word: 'ear', desc: 'The organ of hearing'},
+                {word: 'echo', desc: 'A sound reflected back'},
+                {word: 'eagle', desc: 'A large bird of prey'},
+                {word: 'effort', desc: 'A vigorous attempt'},
+                {word: 'empire', desc: 'A group of nations under one ruler'},
+                {word: 'emotion', desc: 'A strong feeling'},
+                {word: 'evidence', desc: 'Proof or indication'},
+                {word: 'eccentric', desc: 'Unconventional or odd'},
+                {word: 'effervescent', desc: 'Bubbly or enthusiastic'},
+                {word: 'ebullient', desc: 'Cheerful and full of energy'},
+                {word: 'eclectic', desc: 'Diverse in style or source'},
+                {word: 'edification', desc: 'Moral or intellectual improvement'},
+                {word: 'effulgent', desc: 'Shining brightly'},
+                {word: 'egregious', desc: 'Outstandingly bad'},
+                {word: 'elucidate', desc: 'To make clear or explain'},
+                {word: 'emaciated', desc: 'Abnormally thin or weak'},
+                {word: 'enervate', desc: 'To weaken or drain energy'},
+                {word: 'ephemeral', desc: 'Lasting a very short time'},
+                {word: 'esoteric', desc: 'Understood by few'}
+            ],
+            'f': [
+                {word: 'fox', desc: 'A cunning small mammal'},
+                {word: 'fish', desc: 'A creature that lives in water'},
+                {word: 'frog', desc: 'An amphibian with long legs'},
+                {word: 'fence', desc: 'A barrier around property'},
+                {word: 'flower', desc: 'A colorful plant bloom'},
+                {word: 'forest', desc: 'A large area of trees'},
+                {word: 'fiction', desc: 'A story that is not true'},
+                {word: 'festival', desc: 'A celebration or event'},
+                {word: 'flammable', desc: 'Easily set on fire'},
+                {word: 'flamboyant', desc: 'Bold and extravagant'},
+                {word: 'facetious', desc: 'Treating serious issues with humor'},
+                {word: 'fallacious', desc: 'Based on a mistaken belief'},
+                {word: 'fastidious', desc: 'Very attentive to detail'},
+                {word: 'felicitous', desc: 'Well-chosen or apt'},
+                {word: 'ferocious', desc: 'Savagely fierce'},
+                {word: 'florid', desc: 'Excessively ornate'},
+                {word: 'forbearance', desc: 'Patience or restraint'},
+                {word: 'fortuitous', desc: 'Happening by lucky chance'},
+                {word: 'fractious', desc: 'Irritable and quarrelsome'},
+                {word: 'fulminate', desc: 'To express vehement protest'}
+            ],
+            'g': [
+                {word: 'gap', desc: 'A space or opening'},
+                {word: 'gate', desc: 'A movable barrier'},
+                {word: 'goat', desc: 'A horned farm animal'},
+                {word: 'giant', desc: 'A very large person or thing'},
+                {word: 'garden', desc: 'A plot for growing plants'},
+                {word: 'gather', desc: 'To bring together'},
+                {word: 'gallery', desc: 'A room for displaying art'},
+                {word: 'generous', desc: 'Willing to give freely'},
+                {word: 'gregarious', desc: 'Fond of company'},
+                {word: 'gargantuan', desc: 'Enormous in size'},
+                {word: 'galvanize', desc: 'To shock into action'},
+                {word: 'garrulous', desc: 'Excessively talkative'},
+                {word: 'genuflect', desc: 'To bend the knee in respect'},
+                {word: 'germane', desc: 'Relevant to the subject'},
+                {word: 'gesticulate', desc: 'To use expressive hand movements'},
+                {word: 'grandiloquent', desc: 'Pompous in speech'},
+                {word: 'gratuitous', desc: 'Uncalled for or unnecessary'},
+                {word: 'guileless', desc: 'Innocent and without deception'},
+                {word: 'gustatory', desc: 'Relating to the sense of taste'},
+                {word: 'garrulity', desc: 'Excessive talkativeness'}
+            ],
+            'h': [
+                {word: 'hat', desc: 'A head covering'},
+                {word: 'hen', desc: 'A female chicken'},
+                {word: 'hill', desc: 'A raised area of land'},
+                {word: 'horse', desc: 'A large four-legged animal'},
+                {word: 'hammer', desc: 'A tool for pounding nails'},
+                {word: 'hazard', desc: 'A potential danger'},
+                {word: 'horizon', desc: 'The line where earth meets sky'},
+                {word: 'hospital', desc: 'A place for medical care'},
+                {word: 'hierarchy', desc: 'A system of ranking'},
+                {word: 'hypocrisy', desc: 'Pretending to have virtues one lacks'},
+                {word: 'hackneyed', desc: 'Overused and unoriginal'},
+                {word: 'hallowed', desc: 'Regarded as holy'},
+                {word: 'harangue', desc: 'A lengthy aggressive speech'},
+                {word: 'hegemony', desc: 'Dominance over others'},
+                {word: 'hermetic', desc: 'Airtight or isolated'},
+                {word: 'heterogeneous', desc: 'Diverse in character'},
+                {word: 'histrionic', desc: 'Overly dramatic'},
+                {word: 'homogeneous', desc: 'Uniform in composition'},
+                {word: 'hortatory', desc: 'Encouraging or urging'},
+                {word: 'hyperbole', desc: 'Exaggerated statements'}
+            ],
+            'i': [
+                {word: 'ice', desc: 'Frozen water'},
+                {word: 'ink', desc: 'A liquid used for writing'},
+                {word: 'iron', desc: 'A strong metal'},
+                {word: 'image', desc: 'A visual representation'},
+                {word: 'island', desc: 'Land surrounded by water'},
+                {word: 'impact', desc: 'A forceful effect'},
+                {word: 'insect', desc: 'A small six-legged creature'},
+                {word: 'illusion', desc: 'A false appearance'},
+                {word: 'idiosyncrasy', desc: 'A quirky personal habit'},
+                {word: 'illustrious', desc: 'Famously outstanding'},
+                {word: 'ignominious', desc: 'Deserving shame'},
+                {word: 'immutable', desc: 'Unchanging over time'},
+                {word: 'impecunious', desc: 'Having little money'},
+                {word: 'impervious', desc: 'Not allowing passage'},
+                {word: 'impetuous', desc: 'Acting without thought'},
+                {word: 'inadvertent', desc: 'Unintentional'},
+                {word: 'incandescent', desc: 'Glowing with heat'},
+                {word: 'incongruous', desc: 'Not in harmony'},
+                {word: 'indefatigable', desc: 'Tirelessly persistent'},
+                {word: 'insidious', desc: 'Stealthily harmful'}
+            ],
+            'j': [
+                {word: 'jar', desc: 'A glass container'},
+                {word: 'jet', desc: 'A fast aircraft'},
+                {word: 'joke', desc: 'A humorous statement'},
+                {word: 'juice', desc: 'A liquid from fruit'},
+                {word: 'jacket', desc: 'A short coat'},
+                {word: 'jungle', desc: 'A dense tropical forest'},
+                {word: 'journey', desc: 'A trip or travel'},
+                {word: 'justice', desc: 'Fairness or righteousness'},
+                {word: 'junction', desc: 'A point where things meet'},
+                {word: 'juxtaposition', desc: 'Placing things side by side'},
+                {word: 'jargon', desc: 'Specialized language'},
+                {word: 'jaundice', desc: 'A yellowish skin condition'},
+                {word: 'jejune', desc: 'Naive or simplistic'},
+                {word: 'jettison', desc: 'To discard or abandon'},
+                {word: 'jocular', desc: 'Playful or humorous'},
+                {word: 'jubilant', desc: 'Expressing great joy'},
+                {word: 'judicious', desc: 'Showing good judgment'},
+                {word: 'jurisprudence', desc: 'The theory of law'},
+                {word: 'juvenescent', desc: 'Becoming youthful'},
+                {word: 'jocularity', desc: 'Joking or jesting'}
+            ],
+            'k': [
+                {word: 'key', desc: 'A tool for opening locks'},
+                {word: 'kid', desc: 'A young child'},
+                {word: 'kite', desc: 'A flying toy on a string'},
+                {word: 'knife', desc: 'A cutting tool'},
+                {word: 'kettle', desc: 'A pot for boiling water'},
+                {word: 'kernel', desc: 'The core of a seed'},
+                {word: 'kingdom', desc: 'A country ruled by a monarch'},
+                {word: 'kitchen', desc: 'A room for cooking'},
+                {word: 'kerchief', desc: 'A headscarf'},
+                {word: 'kaleidoscope', desc: 'A toy with colorful patterns'},
+                {word: 'kindred', desc: 'Related or similar'},
+                {word: 'kinetic', desc: 'Relating to motion'},
+                {word: 'kleptomaniac', desc: 'A compulsive thief'},
+                {word: 'knavery', desc: 'Dishonest behavior'},
+                {word: 'knead', desc: 'To work dough'},
+                {word: 'knell', desc: 'The sound of a bell rung slowly'},
+                {word: 'kudos', desc: 'Praise or acclaim'},
+                {word: 'kaleidoscopic', desc: 'Constantly changing'},
+                {word: 'kerfuffle', desc: 'A commotion or fuss'},
+                {word: 'kakistocracy', desc: 'Government by the worst'}
+            ],
+            'l': [
+                {word: 'log', desc: 'A piece of cut wood'},
+                {word: 'lip', desc: 'The edge of the mouth'},
+                {word: 'leaf', desc: 'A flat green part of a plant'},
+                {word: 'lamp', desc: 'A device for giving light'},
+                {word: 'ladder', desc: 'A tool for climbing'},
+                {word: 'legend', desc: 'A traditional story'},
+                {word: 'library', desc: 'A place for books'},
+                {word: 'lantern', desc: 'A portable light source'},
+                {word: 'ludicrous', desc: 'Absurd or ridiculous'},
+                {word: 'labyrinth', desc: 'A complex maze'},
+                {word: 'lacerate', desc: 'To tear or cut roughly'},
+                {word: 'lackadaisical', desc: 'Lacking enthusiasm'},
+                {word: 'lamentation', desc: 'Expression of grief'},
+                {word: 'languid', desc: 'Slow and relaxed'},
+                {word: 'larceny', desc: 'Theft of personal property'},
+                {word: 'lethargic', desc: 'Sluggish or apathetic'},
+                {word: 'licentious', desc: 'Lacking moral restraint'},
+                {word: 'limpid', desc: 'Clear and transparent'},
+                {word: 'litigious', desc: 'Prone to lawsuits'},
+                {word: 'lugubrious', desc: 'Mournful or gloomy'}
+            ],
+            'm': [
+                {word: 'map', desc: 'A diagram of an area'},
+                {word: 'mud', desc: 'Wet, soft earth'},
+                {word: 'moon', desc: 'Earth’s natural satellite'},
+                {word: 'milk', desc: 'A white liquid from mammals'},
+                {word: 'mirror', desc: 'A reflective surface'},
+                {word: 'moment', desc: 'A brief period of time'},
+                {word: 'mystery', desc: 'Something unexplained'},
+                {word: 'machine', desc: 'A mechanical device'},
+                {word: 'mischievous', desc: 'Playfully naughty'},
+                {word: 'millennium', desc: 'A period of 1000 years'},
+                {word: 'macerate', desc: 'To soften by soaking'},
+                {word: 'magnanimous', desc: 'Generous or forgiving'},
+                {word: 'malediction', desc: 'A curse or evil wish'},
+                {word: 'malleable', desc: 'Easily shaped or influenced'},
+                {word: 'maudlin', desc: 'Overly sentimental'},
+                {word: 'mendacious', desc: 'Untruthful'},
+                {word: 'mercurial', desc: 'Quickly changing'},
+                {word: 'meticulous', desc: 'Extremely careful'},
+                {word: 'misadventure', desc: 'An unlucky event'},
+                {word: 'multifarious', desc: 'Having great variety'}
+            ],
+            'n': [
+                {word: 'net', desc: 'A mesh used for catching'},
+                {word: 'nut', desc: 'A hard-shelled fruit'},
+                {word: 'nose', desc: 'The organ of smell'},
+                {word: 'nail', desc: 'A metal fastener'},
+                {word: 'needle', desc: 'A thin tool for sewing'},
+                {word: 'nature', desc: 'The physical world'},
+                {word: 'notion', desc: 'An idea or belief'},
+                {word: 'nervous', desc: 'Easily agitated'},
+                {word: 'negligence', desc: 'Failure to take care'},
+                {word: 'nonchalant', desc: 'Casually unconcerned'},
+                {word: 'narcissist', desc: 'A self-obsessed person'},
+                {word: 'nebulous', desc: 'Vague or unclear'},
+                {word: 'necromancy', desc: 'The practice of dark magic'},
+                {word: 'nefarious', desc: 'Wicked or villainous'},
+                {word: 'nemesis', desc: 'A long-standing rival'},
+                {word: 'nihilist', desc: 'One who rejects all values'},
+                {word: 'nocturnal', desc: 'Active at night'},
+                {word: 'nostalgia', desc: 'Sentimental longing'},
+                {word: 'notorious', desc: 'Famous for bad reasons'},
+                {word: 'nugatory', desc: 'Of no value or effect'}
+            ],
+            'o': [
+                {word: 'owl', desc: 'A nocturnal bird of prey'},
+                {word: 'oil', desc: 'A slippery liquid'},
+                {word: 'open', desc: 'Not closed or shut'},
+                {word: 'ocean', desc: 'A vast body of water'},
+                {word: 'orange', desc: 'A citrus fruit'},
+                {word: 'object', desc: 'A tangible thing'},
+                {word: 'origin', desc: 'The point of beginning'},
+                {word: 'opinion', desc: 'A personal belief'},
+                {word: 'obnoxious', desc: 'Highly unpleasant'},
+                {word: 'onomatopoeia', desc: 'A word imitating a sound'},
+                {word: 'obdurate', desc: 'Stubbornly resistant'},
+                {word: 'obfuscate', desc: 'To confuse or obscure'},
+                {word: 'oblique', desc: 'Slanting or indirect'},
+                {word: 'obstreperous', desc: 'Noisy and difficult'},
+                {word: 'occlude', desc: 'To block or obstruct'},
+                {word: 'officious', desc: 'Overly eager to help'},
+                {word: 'omnipotent', desc: 'All-powerful'},
+                {word: 'opprobrium', desc: 'Harsh criticism'},
+                {word: 'ostentatious', desc: 'Showy or pretentious'},
+                {word: 'obtuse', desc: 'Slow to understand'}
+            ],
+            'p': [
+                {word: 'pen', desc: 'A tool for writing'},
+                {word: 'pig', desc: 'A farm animal with a snout'},
+                {word: 'pear', desc: 'A sweet juicy fruit'},
+                {word: 'paint', desc: 'A colored liquid for decoration'},
+                {word: 'pencil', desc: 'A writing tool with lead'},
+                {word: 'planet', desc: 'A celestial body'},
+                {word: 'pocket', desc: 'A small bag in clothing'},
+                {word: 'promise', desc: 'A commitment to do something'},
+                {word: 'prosperity', desc: 'Wealth and success'},
+                {word: 'philosophy', desc: 'The study of knowledge'},
+                {word: 'palpable', desc: 'Easily perceived'},
+                {word: 'panacea', desc: 'A cure for all ills'},
+                {word: 'paradigm', desc: 'A typical example'},
+                {word: 'parsimonious', desc: 'Excessively frugal'},
+                {word: 'pedantic', desc: 'Overly focused on details'},
+                {word: 'penurious', desc: 'Extremely poor'},
+                {word: 'perfunctory', desc: 'Done with little effort'},
+                {word: 'perspicuous', desc: 'Clearly expressed'},
+                {word: 'philanthropic', desc: 'Generous to others'},
+                {word: 'precipitous', desc: 'Dangerously steep'}
+            ],
+            'q': [
+                {word: 'quack', desc: 'The sound a duck makes'},
+                {word: 'quiz', desc: 'A short test'},
+                {word: 'quiet', desc: 'Making little noise'},
+                {word: 'queen', desc: 'A female ruler'},
+                {word: 'quartz', desc: 'A hard mineral'},
+                {word: 'quiver', desc: 'To tremble slightly'},
+                {word: 'quarrel', desc: 'An angry argument'},
+                {word: 'quality', desc: 'A degree of excellence'},
+                {word: 'quantity', desc: 'An amount or number'},
+                {word: 'quixotic', desc: 'Unrealistically optimistic'},
+                {word: 'quaff', desc: 'To drink heartily'},
+                {word: 'quagmire', desc: 'A difficult situation'},
+                {word: 'qualm', desc: 'A feeling of unease'},
+                {word: 'quandary', desc: 'A state of uncertainty'},
+                {word: 'querulous', desc: 'Complaining in a whiny way'},
+                {word: 'queue', desc: 'A line of people waiting'},
+                {word: 'quibble', desc: 'A minor objection'},
+                {word: 'quiescent', desc: 'Inactive or still'},
+                {word: 'quotidian', desc: 'Daily or ordinary'},
+                {word: 'quisling', desc: 'A traitor collaborating with an enemy'}
+            ],
+            'r': [
+                {word: 'rat', desc: 'A small rodent'},
+                {word: 'red', desc: 'A primary color'},
+                {word: 'rain', desc: 'Water falling from the sky'},
+                {word: 'river', desc: 'A large flowing water body'},
+                {word: 'rabbit', desc: 'A small burrowing animal'},
+                {word: 'rescue', desc: 'To save from danger'},
+                {word: 'record', desc: 'A documented account'},
+                {word: 'reflect', desc: 'To throw back light or sound'},
+                {word: 'recession', desc: 'An economic decline'},
+                {word: 'reverberate', desc: 'To echo repeatedly'},
+                {word: 'raconteur', desc: 'A skilled storyteller'},
+                {word: 'ramification', desc: 'A consequence'},
+                {word: 'rancorous', desc: 'Bitterly resentful'},
+                {word: 'rapacious', desc: 'Greedily aggressive'},
+                {word: 'recalcitrant', desc: 'Stubbornly resistant'},
+                {word: 'redoubtable', desc: 'Formidable or inspiring awe'},
+                {word: 'remonstrate', desc: 'To protest or argue'},
+                {word: 'reprehensible', desc: 'Deserving blame'},
+                {word: 'resplendent', desc: 'Shining brilliantly'},
+                {word: 'rhetorical', desc: 'Expressive for effect'}
+            ],
+            's': [
+                {word: 'sun', desc: 'The star Earth orbits'},
+                {word: 'sea', desc: 'A large body of saltwater'},
+                {word: 'snow', desc: 'Frozen precipitation'},
+                {word: 'snake', desc: 'A legless reptile'},
+                {word: 'school', desc: 'A place for learning'},
+                {word: 'secret', desc: 'Something kept hidden'},
+                {word: 'season', desc: 'A division of the year'},
+                {word: 'silence', desc: 'Absence of sound'},
+                {word: 'suspicious', desc: 'Distrustful'},
+                {word: 'sophisticated', desc: 'Complex or refined'},
+                {word: 'sagacious', desc: 'Wise or shrewd'},
+                {word: 'salubrious', desc: 'Healthy or beneficial'},
+                {word: 'sanguine', desc: 'Optimistic or cheerful'},
+                {word: 'sardonic', desc: 'Mocking or cynical'},
+                {word: 'scrupulous', desc: 'Very careful or honest'},
+                {word: 'serendipity', desc: 'Lucky chance findings'},
+                {word: 'servile', desc: 'Excessively submissive'},
+                {word: 'solicitous', desc: 'Showing concern'},
+                {word: 'spurious', desc: 'False or fake'},
+                {word: 'supercilious', desc: 'Arrogantly superior'}
+            ],
+            't': [
+                {word: 'top', desc: 'The highest part'},
+                {word: 'toy', desc: 'A plaything for children'},
+                {word: 'tree', desc: 'A tall woody plant'},
+                {word: 'table', desc: 'A piece of furniture'},
+                {word: 'tunnel', desc: 'An underground passage'},
+                {word: 'target', desc: 'An object to aim at'},
+                {word: 'theory', desc: 'A set of ideas explaining something'},
+                {word: 'traffic', desc: 'Vehicles moving on roads'},
+                {word: 'treacherous', desc: 'Dangerously unstable'},
+                {word: 'tranquility', desc: 'Peaceful calmness'},
+                {word: 'taciturn', desc: 'Reserved or silent'},
+                {word: 'tangential', desc: 'Slightly related'},
+                {word: 'temerity', desc: 'Reckless boldness'},
+                {word: 'tenacious', desc: 'Holding fast'},
+                {word: 'tenebrous', desc: 'Dark or shadowy'},
+                {word: 'terrestrial', desc: 'Of the earth'},
+                {word: 'tirade', desc: 'A long angry speech'},
+                {word: 'torpid', desc: 'Inactive or sluggish'},
+                {word: 'transitory', desc: 'Not permanent'},
+                {word: 'truculent', desc: 'Fiercely aggressive'}
+            ],
+            'u': [
+                {word: 'urn', desc: 'A vase for ashes'},
+                {word: 'use', desc: 'To employ for a purpose'},
+                {word: 'unit', desc: 'A single thing'},
+                {word: 'uncle', desc: 'A parent’s brother'},
+                {word: 'unfair', desc: 'Not just or equitable'},
+                {word: 'unique', desc: 'One of a kind'},
+                {word: 'uniform', desc: 'Consistent or similar'},
+                {word: 'upgrade', desc: 'To improve quality'},
+                {word: 'ubiquitous', desc: 'Present everywhere'},
+                {word: 'unbelievable', desc: 'Hard to accept as true'},
+                {word: 'ulterior', desc: 'Hidden or beyond'},
+                {word: 'umbrage', desc: 'Offense or annoyance'},
+                {word: 'unassailable', desc: 'Unable to be attacked'},
+                {word: 'unctuous', desc: 'Excessively flattering'},
+                {word: 'undulate', desc: 'To move in waves'},
+                {word: 'unfathomable', desc: 'Impossible to understand'},
+                {word: 'unilateral', desc: 'Done by one side'},
+                {word: 'unscrupulous', desc: 'Lacking moral principles'},
+                {word: 'usurp', desc: 'To seize power illegally'},
+                {word: 'uxorious', desc: 'Excessively fond of one’s wife'}
+            ],
+            'v': [
+                {word: 'van', desc: 'A covered vehicle'},
+                {word: 'vet', desc: 'A veterinarian'},
+                {word: 'vine', desc: 'A climbing plant'},
+                {word: 'vase', desc: 'A decorative container'},
+                {word: 'valley', desc: 'A low area between hills'},
+                {word: 'vision', desc: 'The ability to see'},
+                {word: 'victory', desc: 'Success in a contest'},
+                {word: 'village', desc: 'A small rural settlement'},
+                {word: 'vivacious', desc: 'Lively and spirited'},
+                {word: 'vocabulary', desc: 'A set of words'},
+                {word: 'vacillate', desc: 'To waver in decision'},
+                {word: 'vapid', desc: 'Lacking interest'},
+                {word: 'variegated', desc: 'Marked with different colors'},
+                {word: 'vehement', desc: 'Showing strong feeling'},
+                {word: 'venal', desc: 'Open to bribery'},
+                {word: 'veracity', desc: 'Truthfulness'},
+                {word: 'verbose', desc: 'Using too many words'},
+                {word: 'vexatious', desc: 'Annoying or troublesome'},
+                {word: 'vicissitude', desc: 'A change of circumstances'},
+                {word: 'vituperative', desc: 'Bitterly abusive'}
+            ],
+            'w': [
+                {word: 'web', desc: 'A spider’s network'},
+                {word: 'wig', desc: 'A false hairpiece'},
+                {word: 'wind', desc: 'Moving air'},
+                {word: 'water', desc: 'A clear liquid essential for life'},
+                {word: 'window', desc: 'An opening in a wall'},
+                {word: 'wisdom', desc: 'Knowledge and good judgment'},
+                {word: 'wealth', desc: 'Abundance of resources'},
+                {word: 'weather', desc: 'Atmospheric conditions'},
+                {word: 'wilderness', desc: 'An uncultivated area'},
+                {word: 'withdrawal', desc: 'The act of retreating'},
+                {word: 'wanton', desc: 'Reckless or malicious'},
+                {word: 'wary', desc: 'Cautious of danger'},
+                {word: 'wastrel', desc: 'A wasteful person'},
+                {word: 'wheedle', desc: 'To coax or flatter'},
+                {word: 'whimsical', desc: 'Playfully quaint'},
+                {word: 'wily', desc: 'Cunning or crafty'},
+                {word: 'winsome', desc: 'Charming in a childlike way'},
+                {word: 'wistful', desc: 'Longing or yearning'},
+                {word: 'wrathful', desc: 'Full of anger'},
+                {word: 'wunderkind', desc: 'A child prodigy'}
+            ],
+            'x': [
+                {word: 'xray', desc: 'A type of radiation imaging'},
+                {word: 'xbox', desc: 'A popular gaming console'},
+                {word: 'xenon', desc: 'A chemical element gas'},
+                {word: 'xylem', desc: 'Plant tissue for water transport'},
+                {word: 'xmas', desc: 'A shorthand for Christmas'},
+                {word: 'xylene', desc: 'A flammable liquid'},
+                {word: 'xerox', desc: 'A brand of photocopier'},
+                {word: 'xiphoid', desc: 'A cartilage at the sternum'},
+                {word: 'xenophobic', desc: 'Fearful of foreigners'},
+                {word: 'xylophone', desc: 'A musical instrument with bars'},
+                {word: 'xanthic', desc: 'Yellowish in color'},
+                {word: 'xenogenesis', desc: 'The production of offspring unlike parents'},
+                {word: 'xerophyte', desc: 'A plant adapted to dry conditions'},
+                {word: 'xeric', desc: 'Dry or arid'},
+                {word: 'xenophile', desc: 'One attracted to foreign things'},
+                {word: 'xylophonist', desc: 'A player of the xylophone'},
+                {word: 'xenophobic', desc: 'Having a dislike of outsiders'},
+                {word: 'xerography', desc: 'A dry copying process'},
+                {word: 'xanthophyll', desc: 'A yellow pigment in plants'},
+                {word: 'xenotransplantation', desc: 'Transplanting organs between species'}
+            ],
+            'y': [
+                {word: 'yam', desc: 'A starchy root vegetable'},
+                {word: 'yak', desc: 'A long-haired ox'},
+                {word: 'yarn', desc: 'Thread for knitting'},
+                {word: 'yogurt', desc: 'A fermented milk product'},
+                {word: 'yeast', desc: 'A fungus for fermentation'},
+                {word: 'yellow', desc: 'A bright color'},
+                {word: 'yield', desc: 'To produce or surrender'},
+                {word: 'yearly', desc: 'Happening once a year'},
+                {word: 'youthful', desc: 'Having the qualities of youth'},
+                {word: 'yesteryear', desc: 'The recent past'},
+                {word: 'yammer', desc: 'To talk loudly'},
+                {word: 'yoke', desc: 'A wooden bar for oxen'},
+                {word: 'yokel', desc: 'A naive rural person'},
+                {word: 'yore', desc: 'Time long past'},
+                {word: 'yearn', desc: 'To have a strong desire'},
+                {word: 'yeoman', desc: 'A small landowner'},
+                {word: 'yodel', desc: 'To sing with rapid pitch changes'},
+                {word: 'youth', desc: 'The period of being young'},
+                {word: 'yuppify', desc: 'To make appealing to young professionals'},
+                {word: 'yeomanry', desc: 'A group of small landowners'}
+            ],
+            'z': [
+                {word: 'zip', desc: 'A fastener for clothes'},
+                {word: 'zoo', desc: 'A place where animals are kept'},
+                {word: 'zebra', desc: 'A striped horse-like animal'},
+                {word: 'zinc', desc: 'A metallic element'},
+                {word: 'zombie', desc: 'An animated corpse'},
+                {word: 'zephyr', desc: 'A gentle breeze'},
+                {word: 'zigzag', desc: 'A pattern of sharp turns'},
+                {word: 'zealous', desc: 'Full of enthusiasm'},
+                {word: 'zirconium', desc: 'A chemical element used in alloys'},
+                {word: 'zucchini', desc: 'A type of summer squash'},
+                {word: 'zany', desc: 'Amusingly unconventional'},
+                {word: 'zealot', desc: 'A fanatical supporter'},
+                {word: 'zenith', desc: 'The highest point'},
+                {word: 'zero', desc: 'The number before one'},
+                {word: 'zest', desc: 'Great enthusiasm or energy'},
+                {word: 'zodiac', desc: 'A belt of constellations'},
+                {word: 'zoology', desc: 'The study of animals'},
+                {word: 'zither', desc: 'A stringed musical instrument'},
+                {word: 'zymurgy', desc: 'The science of fermentation'},
+                {word: 'zeugma', desc: 'A rhetorical device linking words'}
+            ]
+        };
+
+        let currentDifficulty = '';
+        let currentWords = [];
+        let currentIndex = 0;
+        let infinityScore = 0;
+        let currentGame = '';
+        let spellingBeeLeaderboard = JSON.parse(localStorage.getItem('spellingBeeLeaderboard')) || [];
+        let guessTheWordLeaderboard = JSON.parse(localStorage.getItem('guessTheWordLeaderboard')) || [];
+        let synth = window.speechSynthesis;
+        let instructionVoice = null;
+        let wordVoice = null;
+        let voicesLoaded = false;
+
+        function preloadVoices() {
+            let voices = synth.getVoices();
+            if (voices.length > 0) {
+                instructionVoice = voices.find(voice => voice.name.includes('Google UK English Female')) || voices[0];
+                wordVoice = voices.find(voice => voice.name.includes('Google US English')) || voices[1] || voices[0];
+                voicesLoaded = true;
+                updateLeaderboard();
+            }
+        }
+        preloadVoices();
+        synth.onvoiceschanged = preloadVoices;
+
+        function showSpellingBee() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('spellingBeeMenu').style.display = 'block';
+            document.body.className = 'spelling-bee-bg';
+            updateLeaderboard('spellingBee');
+        }
+
+        function showGuessTheWord() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('guessTheWordMenu').style.display = 'block';
+            document.body.className = 'guess-the-word-bg';
+            updateLeaderboard('guessTheWord');
+        }
+
+        function backToMainMenu() {
+            document.getElementById('spellingBeeMenu').style.display = 'none';
+            document.getElementById('guessTheWordMenu').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+            document.body.className = 'main-bg';
+        }
+
+        function startGame(difficulty, gameType) {
+            if (!voicesLoaded) {
+                setTimeout(() => startGame(difficulty, gameType), 100);
+                return;
+            }
+            currentDifficulty = difficulty;
+            currentGame = gameType;
+            infinityScore = 0;
+            document.body.className = difficulty + '-bg';
+            if (difficulty === 'infinity') {
+                currentWords = [getRandomWord()];
+            } else if (difficulty === 'impossible') {
+                currentWords = getImpossibleWords();
+            } else {
+                let wordCount = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 5 : 10;
+                currentWords = getOrderedWords(wordCount);
+            }
+            currentIndex = 0;
+            
+            document.getElementById('spellingBeeMenu').style.display = 'none';
+            document.getElementById('guessTheWordMenu').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('totalWords').textContent = difficulty === 'infinity' ? '∞' : currentWords.length;
+            document.getElementById('hearWordBtn').style.display = gameType === 'spellingBee' ? 'inline' : 'none';
+            updateWordDisplay();
+            if (gameType === 'spellingBee') playWord();
+        }
+
+        function getOrderedWords(count) {
+            let letters = Object.keys(wordsByLetter);
+            let selectedWords = [];
+            for (let i = 0; i < count; i++) {
+                let randomLetter = letters[Math.floor(Math.random() * letters.length)];
+                selectedWords.push(wordsByLetter[randomLetter][i]);
+            }
+            return selectedWords;
+        }
+
+        function getImpossibleWords() {
+            let letters = Object.keys(wordsByLetter);
+            let selectedWords = [];
+            for (let i = 0; i < 20; i++) {
+                let randomLetter = letters[Math.floor(Math.random() * letters.length)];
+                selectedWords.push(wordsByLetter[randomLetter][i]);
+            }
+            return selectedWords.sort((a, b) => wordsByLetter[a.word[0]].indexOf(a) - wordsByLetter[b.word[0]].indexOf(b));
+        }
+
+        function getRandomWord() {
+            let letters = Object.keys(wordsByLetter);
+            let letter = letters[Math.floor(Math.random() * letters.length)];
+            let words = wordsByLetter[letter];
+            return words[Math.floor(Math.random() * words.length)];
+        }
+
+        function updateWordDisplay() {
+            document.getElementById('wordNumber').textContent = currentDifficulty === 'infinity' ? infinityScore + 1 : currentIndex + 1;
+            document.getElementById('userInput').value = '';
+            document.getElementById('userInput').focus();
+            document.getElementById('feedback').textContent = '';
+            if (currentGame === 'guessTheWord') {
+                let word = currentWords[currentIndex].word;
+                document.getElementById('wordInfo').textContent = 
+                    `${currentWords[currentIndex].desc} (${word.length} letters, starts with '${word[0]}')`;
+            } else {
+                document.getElementById('wordInfo').textContent = currentWords[currentIndex].desc;
+            }
+        }
+
+        function playWord() {
+            synth.cancel();
+            let instruction = new SpeechSynthesisUtterance(`Please spell ${currentWords[currentIndex].word}`);
+            instruction.voice = instructionVoice;
+            instruction.rate = 0.9;
+            instruction.volume = 1.0;
+            synth.speak(instruction);
+            
+            instruction.onend = () => {
+                let word = new SpeechSynthesisUtterance(currentWords[currentIndex].word);
+                word.voice = wordVoice;
+                word.volume = 1.0;
+                synth.speak(word);
+            };
+        }
+
+        function checkSpelling() {
+            let userAnswer = document.getElementById('userInput').value.toLowerCase().trim();
+            let correctAnswer = currentWords[currentIndex].word;
+
+            if (userAnswer === correctAnswer) {
+                currentIndex++;
+                if (currentDifficulty === 'infinity') {
+                    infinityScore++;
+                    currentWords.push(getRandomWord());
+                    updateWordDisplay();
+                    if (currentGame === 'spellingBee') setTimeout(playWord, 100);
+                } else if (currentIndex === currentWords.length) {
+                    winGame();
+                } else {
+                    updateWordDisplay();
+                    if (currentGame === 'spellingBee') setTimeout(playWord, 100);
+                }
+            } else {
+                loseGame(correctAnswer);
+            }
+        }
+
+        function winGame() {
+            synth.cancel();
+            let message = new SpeechSynthesisUtterance('Congratulations! You spelled all words correctly!');
+            message.voice = instructionVoice;
+            message.volume = 1.0;
+            message.onend = () => backToMainMenu();
+            synth.speak(message);
+        }
+
+        function loseGame(correctSpelling) {
+            synth.cancel();
+            let message = new SpeechSynthesisUtterance(`Sorry, you lost. The correct spelling is ${correctSpelling}`);
+            message.voice = instructionVoice;
+            message.volume = 1.0;
+            document.getElementById('feedback').textContent = `Incorrect! The correct spelling is: ${correctSpelling}`;
+            if (currentDifficulty === 'infinity') {
+                updateLeaderboard(currentGame, infinityScore);
+            }
+            message.onend = () => backToMainMenu();
+            synth.speak(message);
+        }
+
+        function updateLeaderboard(gameType, score) {
+            let leaderboard = gameType === 'spellingBee' ? spellingBeeLeaderboard : guessTheWordLeaderboard;
+            let listId = gameType === 'spellingBee' ? 'spellingBeeLeaderboardList' : 'guessTheWordLeaderboardList';
+            if (score) {
+                leaderboard.push(score);
+                leaderboard.sort((a, b) => b - a);
+                leaderboard = leaderboard.slice(0, 5);
+                localStorage.setItem(gameType === 'spellingBee' ? 'spellingBeeLeaderboard' : 'guessTheWordLeaderboard', JSON.stringify(leaderboard));
+            }
+            let list = document.getElementById(listId);
+            list.innerHTML = '';
+            leaderboard.forEach(score => {
+                let li = document.createElement('li');
+                li.textContent = `${score} words`;
+                list.appendChild(li);
+            });
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkSpelling();
+            }
+        });
+    </script>
+</body>
+</html>
