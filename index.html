@@ -92,7 +92,6 @@
 
         .main-bg { background: linear-gradient(135deg, #2196F3, #64B5F6); }
         .spelling-bee-bg { background: linear-gradient(135deg, #ffeb3b, #ff9800, #f44336); }
-        /* Updated Guess the Word home screen to grayish */
         .guess-the-word-bg { background: linear-gradient(135deg, #757575, #B0BEC5); }
         .easy-bg { background: linear-gradient(135deg, #4CAF50, #81C784); }
         .medium-bg { background: linear-gradient(135deg, #FFEB3B, #FFD54F); }
@@ -838,7 +837,7 @@
                 document.getElementById('wordInfo').textContent = 
                     `${currentWords[currentIndex].desc} (${word.length} letters, starts with '${word[0]}')`;
             } else {
-                document.getElementById('wordInfo').textContent = currentWords[currentIndex].desc;
+                document.getElementById('wordInfo').textContent = '';
             }
         }
 
